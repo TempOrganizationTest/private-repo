@@ -33,17 +33,18 @@ jobs:
           git push origin main --force
           git push origin --tags
 
-      # 3. GitHub Release Oluştur
-      - name: Create Release
-        uses: actions/create-release@v1
+      - name: Create Release using GitHub CLI
+        run: |
+          cd public-repo
+          gh release create ${{ github.ref_name }} \
+            --title="Release ${{ github.ref_name }}" \
+            --notes="Automated release from private repository" \
+            --target=main
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_PAT }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          body: |
-            Automated release from private repository
-            Version: ${{ github.ref_name }}
-            Date: ${{ github.event.repository.updated_at }}
-          draft: false
-          prerelease: false
+
+      - name: Verify Release Created
+        run: |
+          gh release view ${{ github.ref_name }} --repo=TempOrganizationTest/public-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_PAT }}
