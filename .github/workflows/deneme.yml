@@ -19,7 +19,7 @@ jobs:
       - name: Push to Public Repo
         run: |
           # Public repo'yu geçici dizine klonla
-          git clone https://TestDumpAccount:${{ secrets.PUBLIC_REPO_PAT }}@github.com/organizasyon/public-repo.git public-repo
+          git clone https://TestDumpAccount:${{ secrets.PUBLIC_REPO_PAT }}@github.com/TempOrganizationTest//public-repo.git public-repo
           
           # .github dizini hariç tüm dosyaları kopyala
           find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -exec cp -r {} public-repo/ \;
@@ -43,5 +43,5 @@ jobs:
             Automated release from private repository
             Version: ${{ github.ref_name }}
             Date: ${{ github.event.repository.updated_at }}
-          repository: organizasyon/public-repo
+          repository: TempOrganizationTest/public-repo
           token: ${{ secrets.PUBLIC_REPO_PAT }}
