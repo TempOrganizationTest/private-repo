@@ -1,59 +1,47 @@
-#.github/workflows/sync-release.yml
+name: Sync to Public Repo and Release
 
-name: Sync and Release to Public Repository
-
-# İş akışını, yalnızca 'release' dalına 'v' ile başlayan bir etiket gönderildiğinde tetikle
 on:
   push:
     tags:
-      - 'v*'
-    branches:
-      - 'release'
+      - 'v*' # v ile başlayan tag'ler için tetiklenir
 
 jobs:
   sync-and-release:
     runs-on: ubuntu-latest
     steps:
-      # 1. Adım: Özel deponun kodunu ve tam geçmişini çek
-      - name: Check out private repository
-        uses: actions/checkout@v5.0.0
+      # 1. Private repo'daki kodu checkout et
+      - name: Checkout Private Repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Adım: Kodu halka açık depoya zorla it (force push)
-      - name: Force push to public repository
+      # 2. Public repo'ya push yap (commit history'siz)
+      - name: Push to Public Repo
         run: |
-          # Git işlemlerini yapacak bot için kullanıcı bilgilerini ayarla
+          # Public repo'yu geçici dizine klonla
+          git clone https://TestDumpAccount:${{ secrets.PUBLIC_REPO_PAT }}@github.com/organizasyon/public-repo.git public-repo
+          
+          # .github dizini hariç tüm dosyaları kopyala
+          find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -exec cp -r {} public-repo/ \;
+          
+          cd public-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Halka açık depoyu, kimlik doğrulaması için PAT ile birlikte bir remote olarak ekle
-          git remote add public_repo https://x-access-token:${{ secrets.PUBLIC_REPO_PAT }}@github.com/TempOrganizationTest/public-repo.git
-          
-          # Varsayılan GITHUB_TOKEN'ın neden olduğu potansiyel kimlik doğrulama çakışmasını önle
-          git config --unset-all http.https://github.com/.extraheader
-          
-          # PAT'ın 'workflow' izni olmaması hatasını önlemek ve özel iş akışlarını ifşa etmemek için
-          #.github dizinini itme işleminden önce kaldır.
-          rm -rf .github
-          
-          # Özel deponun 'release' dalını, halka açık deponun 'main' dalına zorla it
-          git push public_repo release:main --force
+          git add .
+          git commit -m "Release: ${{ github.ref_name }}"
+          git tag ${{ github.ref_name }}
+          git push origin main --force
+          git push origin --tags
 
-      # 3. Adım: Halka açık depoda yeni bir GitHub Sürümü oluştur
-      - name: Create release on public repository
-        id: create_release # Bu adıma bir ID vererek çıktılarına erişim sağla
-        uses: ncipollo/release-action@v1.20.0
+      # 3. GitHub Release Oluştur
+      - name: Create Release
+        uses: actions/create-release@v1
         with:
-          # Halka açık depoya erişim için PAT'ı kullan
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            Automated release from private repository
+            Version: ${{ github.ref_name }}
+            Date: ${{ github.event.repository.updated_at }}
+          repository: organizasyon/public-repo
           token: ${{ secrets.PUBLIC_REPO_PAT }}
-          # Hedef deponun sahibini ve adını belirt
-          owner: TestDumpAccount
-          repo: public-repo
-          # Tetikleyici etiketi sürüm etiketi olarak kullan
-          tag: ${{ github.ref_name }}
-          # Otomatik olarak sürüm notları oluştur
-          generateReleaseNotes: true
-          # Aynı etikete sahip bir sürüm varsa güncelle
-          allowUpdates: true
-   
