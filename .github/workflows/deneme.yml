@@ -39,7 +39,7 @@ jobs:
       # 3. Adım: Halka açık depoda yeni bir GitHub Sürümü oluştur
       - name: Create release on public repository
         id: create_release # Bu adıma bir ID vererek çıktılarına erişim sağla
-        uses: ncipollo/release-action@latest
+        uses: ncipollo/release-action@v1.20.0
         with:
           # Halka açık depoya erişim için PAT'ı kullan
           token: ${{ secrets.PUBLIC_REPO_PAT }}
