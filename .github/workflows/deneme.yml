@@ -35,7 +35,7 @@ jobs:
           
           # PAT'ın 'workflow' izni olmaması hatasını önlemek ve özel iş akışlarını ifşa etmemek için
           #.github dizinini itme işleminden önce kaldır.
-          rm -rf.github
+          rm -rf .github
           
           # Özel deponun 'release' dalını, halka açık deponun 'main' dalına zorla it
           git push public_repo release:main --force
