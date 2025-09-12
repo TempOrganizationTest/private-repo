@@ -33,21 +33,23 @@ jobs:
           git push origin main --force
           git push origin --tags
 
-      - name: Create Release using GitHub CLI
+      - name: Create Release via API
         run: |
-          cd public-repo
-          echo "${{ secrets.PUBLIC_REPO_PAT }}" | gh auth login --with-token
-
-          gh release create ${{ github.ref_name }} \
-            --title="Release ${{ github.ref_name }}" \
-            --notes="Automated release from private repository" \
-            --target=main
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_PAT }}
-
-      - name: Verify Release Created
-        run: |
-          echo "${{ secrets.PUBLIC_REPO_PAT }}" | gh auth login --with-token
-          gh release view ${{ github.ref_name }} --repo=TempOrganizationTest/public-repo
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_PAT }}
+          # API ile release oluştur
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PUBLIC_REPO_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/TempOrganizationTest/public-repo/releases" \
+            -d '{
+              "tag_name": "${{ github.ref_name }}",
+              "name": "Release ${{ github.ref_name }}",
+              "body": "Automated release from private repository\n\nVersion: ${{ github.ref_name }}\nDate: $(date -u +\"%Y-%m-%dT%H:%M:%SZ\")",
+              "draft": false,
+              "prerelease": false,
+              "target_commitish": "main"
+            }'
+              
+          # Release'in oluşturulduğunu kontrol et
+          curl -H "Authorization: token ${{ secrets.PUBLIC_REPO_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/TempOrganizationTest/public-repo/releases/tags/${{ github.ref_name }}"
