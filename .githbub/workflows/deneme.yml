@@ -1,0 +1,64 @@
+#.github/workflows/sync-release.yml
+
+name: Sync and Release to Public Repository
+
+# İş akışını, yalnızca 'release' dalına 'v' ile başlayan bir etiket gönderildiğinde tetikle
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - 'release'
+
+jobs:
+  sync-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Adım: Özel deponun kodunu ve tam geçmişini çek
+      - name: Check out private repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # pin@v4.1.7
+        with:
+          fetch-depth: 0
+
+      # 2. Adım: Kodu halka açık depoya zorla it (force push)
+      - name: Force push to public repository
+        run: |
+          # Git işlemlerini yapacak bot için kullanıcı bilgilerini ayarla
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Halka açık depoyu, kimlik doğrulaması için PAT ile birlikte bir remote olarak ekle
+          git remote add public_repo https://x-access-token:${{ secrets.PUBLIC_REPO_PAT }}@github.com/KULLANICI_ADINIZ/PUBLIC_REPO_ADINIZ.git
+          
+          # Varsayılan GITHUB_TOKEN'ın neden olduğu potansiyel kimlik doğrulama çakışmasını önle
+          git config --unset-all http.https://github.com/.extraheader
+          
+          # Özel deponun 'release' dalını, halka açık deponun 'main' dalına zorla it
+          git push public_repo release:main --force
+
+      # 3. Adım: Halka açık depoda yeni bir GitHub Sürümü oluştur
+      - name: Create release on public repository
+        id: create_release # Bu adıma bir ID vererek çıktılarına erişim sağla
+        uses: ncipollo/release-action@2e2d921c343a75502a0f8b35a8f55325a752a19e # pin@v1.14.0
+        with:
+          # Halka açık depoya erişim için PAT'ı kullan
+          token: ${{ secrets.PUBLIC_REPO_PAT }}
+          # Hedef deponun sahibini ve adını belirt
+          owner: KULLANICI_ADINIZ
+          repo: PUBLIC_REPO_ADINIZ
+          # Tetikleyici etiketi sürüm etiketi olarak kullan
+          tag: ${{ github.ref_name }}
+          # Otomatik olarak sürüm notları oluştur
+          generateReleaseNotes: true
+          # Aynı etikete sahip bir sürüm varsa güncelle
+          allowUpdates: true
+
+      # 4. Adım: İşlem sonucunu özetleyen bir İş Özeti oluştur
+      - name: Generate Job Summary
+        run: |
+          echo "### Sürüm Özeti" >> $GITHUB_STEP_SUMMARY
+          echo "Senkronizasyon ve yeni sürüm oluşturma başarıyla tamamlandı." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Halka Açık Depo:** KULLANICI_ADINIZ/PUBLIC_REPO_ADINIZ" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sürüm Etiketi:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Doğrudan Bağlantı:**(${{ steps.create_release.outputs.html_url }})" >> $GITHUB_STEP_SUMMARY
