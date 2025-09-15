@@ -3,53 +3,66 @@ name: Sync to Public Repo and Release
 on:
   push:
     tags:
-      - 'v*' # v ile başlayan tag'ler için tetiklenir
+      - 'v*'
+    branches-ignore: 
+      - '*'  # tüm branch'leri ignore et
+      - '!release'  # sadece release branch'ini hariç tut
 
 jobs:
   sync-and-release:
     runs-on: ubuntu-latest
     steps:
-      # 1. Private repo'daki kodu checkout et
       - name: Checkout Private Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Public repo'ya push yap (commit history'siz)
-      - name: Push to Public Repo
+      - name: Clone Public Repository
         run: |
-          # Public repo'yu geçici dizine klonla
-          git clone https://TestDumpAccount:${{ secrets.PUBLIC_REPO_PAT }}@github.com/TempOrganizationTest//public-repo.git public-repo
+          git clone https://TestDumpAccount:${{ secrets.PUBLIC_REPO_PAT }}@github.com/TempOrganizationTest/public-repo.git public-repo-temp
+
+      - name: Prepare Public Repository
+        run: |
+          # Mevcut dosyaları temizle (.git klasörü hariç)
+          cd public-repo-temp
+          find . -maxdepth 1 -not -name '.' -not -name '.git' -exec rm -rf {} +
           
-          # .github dizini hariç tüm dosyaları kopyala
-          find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -exec cp -r {} public-repo/ \;
-          
-          cd public-repo
+          # Dosyaları private repo'dan public repo'ya kopyala
+          cd ..
+          find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -not -name 'public-repo-temp' -exec cp -r {} public-repo-temp/ \;
+
+      - name: Configure Git for Public Repo
+        run: |
+          cd public-repo-temp
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+
+      - name: Get Tag Annotation Message
+        id: get_tag_message
+        run: |
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }} 2>/dev/null || echo "Automated release from private repository\n\nVersion: ${{ github.ref_name }}")
+          
+          ESCAPED_MESSAGE=$(echo "$TAG_MESSAGE" | jq -R -s -c .)
+          echo "tag_message=$ESCAPED_MESSAGE" >> $GITHUB_OUTPUT
+
+      - name: Commit and Push to Public Repo
+        run: |
+          cd public-repo-temp
           git add .
-          git commit -m "Release: ${{ github.ref_name }}"
+          git commit -m "release: ${{ github.ref_name }}"
           git tag ${{ github.ref_name }}
           git push origin main --force
           git push origin --tags
 
-      - name: Create Release via API
-        run: |
-          # API ile release oluştur
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.PUBLIC_REPO_PAT }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/TempOrganizationTest/public-repo/releases" \
-            -d '{
-              "tag_name": "${{ github.ref_name }}",
-              "name": "Release ${{ github.ref_name }}",
-              "body": "Automated release from private repository\n\nVersion: ${{ github.ref_name }}\nDate: $(date -u +\"%Y-%m-%dT%H:%M:%SZ\")",
-              "draft": false,
-              "prerelease": false,
-              "target_commitish": "main"
-            }'
-              
-          # Release'in oluşturulduğunu kontrol et
-          curl -H "Authorization: token ${{ secrets.PUBLIC_REPO_PAT }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/TempOrganizationTest/public-repo/releases/tags/${{ github.ref_name }}"
+      - name: Create Release on Public Repo
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_PAT }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: ${{ steps.get_tag_message.outputs.tag_message }}
+          draft: false
+          prerelease: false
+          repo: TempOrganizationTest/public-repo
