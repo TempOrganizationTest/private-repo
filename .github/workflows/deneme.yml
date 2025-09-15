@@ -60,7 +60,6 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: ${{ steps.get_tag_message.outputs.tag_message }}
-          body_path: ${{ github.workspace }}-CHANGELOG.txt
           repository: TempOrganizationTest/public-repo
           draft: false
           prerelease: false
