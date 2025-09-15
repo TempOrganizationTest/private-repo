@@ -21,8 +21,8 @@ jobs:
           git tag -d "${{ github.ref_name }}" 2>/dev/null || true
           git fetch --tags --force
           
-          TAG_MESSAGE=$(git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' "${{ github.ref_name }}" 2>/dev/null)
-          
+          TAG_MESSAGE=$(git show "${{ github.ref_name }}" --format="%B" 2>/dev/null | sed '/^$/d')
+
           if [ -z "$TAG_MESSAGE" ]; then
             TAG_MESSAGE="Automated release from private repository\n\nVersion: ${{ github.ref_name }}"
           fi
