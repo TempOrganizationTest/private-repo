@@ -28,7 +28,7 @@ jobs:
           fi
           
           FORMATTED_MESSAGE=$(echo -e "$TAG_MESSAGE")
-          ESCAPED_MESSAGE=$(echo -e "$FORMATTED_MESSAGE" | jq -R -s -c .)
+          ESCAPED_MESSAGE=$(echo -e "$TAG_MESSAGE" | jq -R -s -c .)
           echo "tag_message=$ESCAPED_MESSAGE" >> $GITHUB_OUTPUT
 
       - name: Clone Public Repository
