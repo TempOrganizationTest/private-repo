@@ -53,7 +53,7 @@ jobs:
           git commit -m "release: ${{ github.ref_name }}"
           git tag ${{ github.ref_name }}
           git push origin main --force
-          git push origin --tags
+          git push origin --tags 
 
       - name: Create Release on Public Repo
         uses: actions/create-release@v1
