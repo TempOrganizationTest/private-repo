@@ -63,4 +63,4 @@ jobs:
           body: ${{ steps.get_tag_message.outputs.tag_message }}
           draft: false
           prerelease: false
-          repository: TempOrganizationTest/public-repo
+          repo: TempOrganizationTest/public-repo
