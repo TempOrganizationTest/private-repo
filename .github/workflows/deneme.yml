@@ -7,7 +7,7 @@ on:
 
 jobs:
   sync-and-release:
-    if: github.ref_type != 'tag' || contains(github.ref, 'refs/tags/') && github.event.base_ref == 'refs/heads/release'  && github.ref_name != 'release'
+    if: contains(github.ref, 'refs/tags/') && github.event.base_ref == 'refs/heads/release'  && github.ref_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
