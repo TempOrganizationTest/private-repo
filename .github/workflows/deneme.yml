@@ -18,7 +18,8 @@ jobs:
       - name: Get Tag Annotation Message
         id: get_tag_message
         run: |
-          git fetch --tags
+          git tag -d "${{ github.ref_name }}" 2>/dev/null || true
+          git fetch --tags --force
           
           TAG_MESSAGE=$(git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' "${{ github.ref_name }}" 2>/dev/null)
           
