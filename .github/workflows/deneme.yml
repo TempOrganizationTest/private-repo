@@ -15,6 +15,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get Tag Annotation Message
+        id: get_tag_message
+        run: |
+          git fetch --tags
+          
+          TAG_MESSAGE=$(git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' "${{ github.ref_name }}" 2>/dev/null)
+          
+          if [ -z "$TAG_MESSAGE" ]; then
+            TAG_MESSAGE="Automated release from private repository\n\nVersion: ${{ github.ref_name }}"
+          fi
+          
+          # Debug için mesajı göster
+          echo "Tag message:"
+          echo "$TAG_MESSAGE"
+          
+          ESCAPED_MESSAGE=$(echo -e "$TAG_MESSAGE" | jq -R -s -c .)
+          echo "tag_message=$ESCAPED_MESSAGE" >> $GITHUB_OUTPUT
+
       - name: Clone Public Repository
         run: |
           git clone https://TestDumpAccount:${{ secrets.PUBLIC_REPO_PAT }}@github.com/TempOrganizationTest/public-repo.git public-repo-temp
@@ -34,15 +52,6 @@ jobs:
           cd public-repo-temp
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-
-      - name: Get Tag Annotation Message
-        id: get_tag_message
-        run: |
-          TAG_MESSAGE=$(git tag -l --format='%(contents)' ${{ github.ref_name }} 2>/dev/null || echo "Automated release from private repository\n\nVersion: ${{ github.ref_name }}")
-          
-          ESCAPED_MESSAGE=$(echo "$TAG_MESSAGE" | jq -R -s -c .)
-          echo "tag_message=$ESCAPED_MESSAGE" >> $GITHUB_OUTPUT
 
       - name: Commit and Push to Public Repo
         run: |
