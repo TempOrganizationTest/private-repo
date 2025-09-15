@@ -27,11 +27,8 @@ jobs:
             TAG_MESSAGE="Automated release from private repository\n\nVersion: ${{ github.ref_name }}"
           fi
           
-          # Debug için mesajı göster
-          echo "Tag message:"
-          echo "$TAG_MESSAGE"
-          
-          ESCAPED_MESSAGE=$(echo -e "$TAG_MESSAGE" | jq -R -s -c .)
+          FORMATTED_MESSAGE=$(echo -e "$TAG_MESSAGE")
+          ESCAPED_MESSAGE=$(echo -e "$FORMATTED_MESSAGE" | jq -R -s -c .)
           echo "tag_message=$ESCAPED_MESSAGE" >> $GITHUB_OUTPUT
 
       - name: Clone Public Repository
@@ -60,7 +57,7 @@ jobs:
           git add .
           git commit -m "release: ${{ github.ref_name }}"
           git tag ${{ github.ref_name }}
-          git push origin main --force
+          git push origin main
           git push origin --tags 
 
       - name: Create Release on Public Repo
