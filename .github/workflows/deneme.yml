@@ -4,12 +4,10 @@ on:
   push:
     tags:
       - 'v*'
-    branches-ignore: 
-      - '*'  # tüm branch'leri ignore et
-      - '!release'  # sadece release branch'ini hariç tut
 
 jobs:
   sync-and-release:
+    if: github.event.base_ref == 'refs/heads/release' || contains(github.event.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
