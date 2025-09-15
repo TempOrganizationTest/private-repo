@@ -54,13 +54,15 @@ jobs:
           git push origin --tags 
 
       - name: Create Release on Public Repo
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PUBLIC_REPO_PAT }}
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: ${{ steps.get_tag_message.outputs.tag_message }}
+          body_path: ${{ github.workspace }}-CHANGELOG.txt
+          repository: TempOrganizationTest/public-repo
           draft: false
           prerelease: false
-          repo: TempOrganizationTest/public-repo
+          make_latest: 'true'
+          token: ${{ secrets.PUBLIC_REPO_PAT }}
