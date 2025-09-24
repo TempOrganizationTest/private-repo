@@ -2,9 +2,9 @@ name: Sync to Public Repo and Release
 
 on:
   push:
-    tags:
-      - 'v*'
-      
+    branches:
+      - 'release' 
+
 jobs:
   sync-and-release:
     runs-on: ubuntu-latest
