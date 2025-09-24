@@ -9,7 +9,7 @@ on:
 
 jobs:
   sync-and-release:
-    if: (github.event.base_ref == 'refs/heads/release' && github.ref_type == 'tag') || github.ref == 'refs/heads/release'
+    if: github.ref == 'refs/heads/release' || (github.ref_type == 'tag' && contains(github.event.head_commit.message, 'Release'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
