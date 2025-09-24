@@ -3,10 +3,13 @@ name: Sync to Public Repo and Release
 on:
   push:
     branches:
-      - 'release' 
+      - 'release'
+    tags:
+      - 'v*'
 
 jobs:
   sync-and-release:
+    if: github.event.base_ref == 'refs/heads/release' || github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
