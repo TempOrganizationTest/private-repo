@@ -2,8 +2,8 @@ name: Sync to Public Repo and Release
 
 on:
   push:
-    branches:
-      - 'release'
+    tags:
+      - 'v*'
 
 jobs:
   sync-and-release:
