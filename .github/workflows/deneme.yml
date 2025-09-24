@@ -30,6 +30,8 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "✅ Found tag: $TAG"
           
+          git fetch origin
+          
           BRANCHES_WITH_COMMIT=$(git branch -r --contains $LATEST_COMMIT_SHA)
           echo "Branches containing commit $LATEST_COMMIT_SHA:"
           echo "$BRANCHES_WITH_COMMIT"
