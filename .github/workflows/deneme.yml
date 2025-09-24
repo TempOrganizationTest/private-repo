@@ -4,32 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - 'release'
 
 jobs:
-  check_if_on_release_branch:
-    runs-on: ubuntu-latest
-    outputs:
-      is_on_release: ${{ steps.check.outputs.is_on_release }}
-    steps:
-      - name: Checkout Private Repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check if tag is on the release branch
-        id: check
-        run: |
-          if git branch -r --contains ${{ github.ref_name }} | grep -q 'origin/release'; then
-            echo "✅ Etiket (${{ github.ref_name }}) 'release' dalı üzerinde bulundu. İşlem devam edecek."
-            echo "is_on_release=true" >> $GITHUB_OUTPUT
-          else
-            echo "ℹ️ Etiket (${{ github.ref_name }}) 'release' dalı üzerinde değil. İşlem atlanacak."
-            echo "is_on_release=false" >> $GITHUB_OUTPUT
-          fi
-
   sync-and-release:
-    needs: check_if_on_release_branch
-    if: needs.check_if_on_release_branch.outputs.is_on_release == 'true'
+    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
