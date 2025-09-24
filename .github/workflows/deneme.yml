@@ -26,10 +26,22 @@ jobs:
             exit 1
           fi
           
-          # Get the first tag (there can be more than one tag in a commit)
           TAG=$(echo "$TAGS" | head -n1)
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "✅ Found tag: $TAG"
+          
+          BRANCHES_WITH_COMMIT=$(git branch -r --contains $LATEST_COMMIT_SHA)
+          echo "Branches containing commit $LATEST_COMMIT_SHA:"
+          echo "$BRANCHES_WITH_COMMIT"
+          
+          if echo "$BRANCHES_WITH_COMMIT" | grep -q "origin/release"; then
+            echo "✅ Tag comes from release branch. Continuing workflow."
+          else
+            echo "❌ Error: Tag does not come from release branch. Only tags on release branch are allowed."
+            echo "Found branches:"
+            echo "$BRANCHES_WITH_COMMIT"
+            exit 1
+          fi
 
       - name: Get Tag Annotation Message
         id: get_tag_message
