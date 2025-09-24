@@ -4,12 +4,9 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - 'release'
 
 jobs:
   sync-and-release:
-    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
