@@ -4,27 +4,43 @@ on:
   push:
     branches:
       - 'release' 
+      - 'release/' 
 
 jobs:
   sync-and-release:
-    if: contains(github.ref, 'refs/tags/') && github.event.base_ref == 'refs/heads/release'  && github.ref_name != 'release'
+    if: contains(github.ref, 'refs/heads/release')  && github.event.base_ref == 'refs/heads/release'    
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Private Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          
+      - name: Validate Tag Existence
+        id: validate_tag
+        run: |
+          LATEST_COMMIT_SHA=$(git rev-parse HEAD)
+          TAGS=$(git tag --points-at $LATEST_COMMIT_SHA)
+          
+          if [ -z "$TAGS" ]; then
+            echo "❌ Error: No tag found for the latest commit. Please create and push a tag."
+            echo "To create a tag: git tag -a v1.0.0 -m 'Release message' && git push origin v1.0.0"
+            exit 1
+          fi
+          
+          # Get the first tag (there can be more than one tag in a commit)
+          TAG=$(echo "$TAGS" | head -n1)
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "✅ Found tag: $TAG"
 
       - name: Get Tag Annotation Message
         id: get_tag_message
         run: |
-          git tag -d "${{ github.ref_name }}" 2>/dev/null || true
-          git fetch --tags --force
           
-          TAG_MESSAGE=$(git tag -l --format='%(contents)' "${{ github.ref_name }}" 2>/dev/null)
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' "${{ steps.validate_tag.outputs.tag }}" 2>/dev/null)
 
           if [ -z "$TAG_MESSAGE" ]; then
-            TAG_MESSAGE="Automated release from private repository\n\nVersion: ${{ github.ref_name }}"
+            TAG_MESSAGE="Automated release from private repository\n\nVersion: ${{ steps.validate_tag.outputs.tag }}"
           fi
           
           FORMATTED_MESSAGE=$(echo -e "$TAG_MESSAGE")
@@ -55,8 +71,8 @@ jobs:
         run: |
           cd public-repo-temp
           git add .
-          git commit -m "release: ${{ github.ref_name }}"
-          git tag ${{ github.ref_name }}
+          git commit -m "release: ${{ steps.validate_tag.outputs.tag }}"
+          git tag ${{ steps.validate_tag.outputs.tag }}
           git push origin main
           git push origin --tags 
 
@@ -64,8 +80,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ steps.validate_tag.outputs.tag }}
+          name: Release ${{ steps.validate_tag.outputs.tag }}
           body:  ${{ fromJSON(steps.get_tag_message.outputs.tag_message) }}
           repository: TempOrganizationTest/public-repo
           draft: false
