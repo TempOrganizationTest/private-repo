@@ -87,6 +87,13 @@ jobs:
           git tag ${{ steps.validate_tag.outputs.tag }}
           git push origin main
           git push origin --tags 
+      
+      - name: Update 'latest' Tag on Public Repo
+        run: |
+          cd public-repo-temp
+          echo "Updating 'latest' tag to point to ${{ steps.validate_tag.outputs.tag }}"
+          git tag -f v1.2.19 ${{ steps.validate_tag.outputs.tag }}
+          git push origin --force latest
 
       - name: Create Release on Public Repo
         uses: softprops/action-gh-release@v2
