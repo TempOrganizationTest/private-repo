@@ -3,7 +3,7 @@ name: Sync to Public Repo and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   sync-and-release:
@@ -13,29 +13,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+
       - name: Validate Tag Existence
         id: validate_tag
         run: |
           LATEST_COMMIT_SHA=$(git rev-parse HEAD)
           TAGS=$(git tag --points-at $LATEST_COMMIT_SHA)
-          
+
           if [ -z "$TAGS" ]; then
             echo "❌ Error: No tag found for the latest commit. Please create and push a tag."
             echo "To create a tag: git tag -a v1.0.0 -m 'Release message' && git push origin v1.0.0"
             exit 1
           fi
-          
+
           TAG=$(echo "$TAGS" | head -n1)
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "✅ Found tag: $TAG"
-          
+
           git fetch origin
-          
+
           BRANCHES_WITH_COMMIT=$(git branch -r --contains $LATEST_COMMIT_SHA)
           echo "Branches containing commit $LATEST_COMMIT_SHA:"
           echo "$BRANCHES_WITH_COMMIT"
-          
+
           if echo "$BRANCHES_WITH_COMMIT" | grep -q "origin/release"; then
             echo "✅ Tag comes from release branch. Continuing workflow."
           else
@@ -48,13 +48,13 @@ jobs:
       - name: Get Tag Annotation Message
         id: get_tag_message
         run: |
-          
+
           TAG_MESSAGE=$(git tag -l --format='%(contents)' "${{ steps.validate_tag.outputs.tag }}" 2>/dev/null)
 
           if [ -z "$TAG_MESSAGE" ]; then
             TAG_MESSAGE="Automated release from private repository\n\nVersion: ${{ steps.validate_tag.outputs.tag }}"
           fi
-          
+
           FORMATTED_MESSAGE=$(echo -e "$TAG_MESSAGE")
           ESCAPED_MESSAGE=$(echo -e "$TAG_MESSAGE" | jq -R -s -c .)
           echo "tag_message=$ESCAPED_MESSAGE" >> $GITHUB_OUTPUT
@@ -68,7 +68,7 @@ jobs:
           # Mevcut dosyaları temizle (.git klasörü hariç)
           cd public-repo-temp
           find . -maxdepth 1 -not -name '.' -not -name '.git' -exec rm -rf {} +
-          
+
           # Dosyaları private repo'dan public repo'ya kopyala
           cd ..
           find . -maxdepth 1 -not -name '.' -not -name '.git' -not -name '.github' -not -name 'public-repo-temp' -exec cp -r {} public-repo-temp/ \;
@@ -83,6 +83,7 @@ jobs:
         run: |
           cd public-repo-temp
           npm install
+          npm run build
 
       - name: Commit and Push to Public Repo
         run: |
@@ -92,8 +93,8 @@ jobs:
           git commit -m "release: ${{ steps.validate_tag.outputs.tag }}"
           git tag ${{ steps.validate_tag.outputs.tag }}
           git push origin main
-          git push origin --tags 
-      
+          git push origin --tags
+
       - name: Update 'latest' Tag on Public Repo
         run: |
           cd public-repo-temp
@@ -106,9 +107,9 @@ jobs:
         with:
           tag_name: ${{ steps.validate_tag.outputs.tag }}
           name: Release ${{ steps.validate_tag.outputs.tag }}
-          body:  ${{ fromJSON(steps.get_tag_message.outputs.tag_message) }}
+          body: ${{ fromJSON(steps.get_tag_message.outputs.tag_message) }}
           repository: TempOrganizationTest/public-repo
           draft: false
           prerelease: false
-          make_latest: 'true'
+          make_latest: "true"
           token: ${{ secrets.PUBLIC_REPO_PAT }}
