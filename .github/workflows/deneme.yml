@@ -79,9 +79,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Build TypeScript
+        run: |
+          cd public-repo-temp
+          npm install
+
       - name: Commit and Push to Public Repo
         run: |
           cd public-repo-temp
+          git add -f dist/
           git add .
           git commit -m "release: ${{ steps.validate_tag.outputs.tag }}"
           git tag ${{ steps.validate_tag.outputs.tag }}
